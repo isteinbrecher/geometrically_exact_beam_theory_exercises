@@ -10,3 +10,6 @@ Some general instructions for using the notebooks in the interactive browser ses
 - You can run the code cells in the notebooks by selecting a cell and pressing `Shift + Enter`.
 - If you want to save your changes, you need to download the notebook to your local machine (`File > Download`).
 - The interactive environment provided by Binder is temporary and will be reset after a period of inactivity, so make sure to save your work regularly.
+
+## License
+This project is licensed under the MIT License.

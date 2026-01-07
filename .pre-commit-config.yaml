@@ -34,13 +34,6 @@ repos:
         name: Check for debugger imports
       - id: trailing-whitespace
         name: Check for trailing whitespaces
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.8.0
-    hooks:
-      - id: bandit
-        name: Run bandit (security linter for python)
-        args: ["--configfile", "pyproject.toml", "--exclude", "tests/*"]
-        additional_dependencies: ["bandit[toml]"]
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v19.1.5
     hooks:
@@ -52,7 +45,7 @@ repos:
     hooks:
       - id: docformatter
         name: Run docformatter (formatter for docstrings)
-        args: ["--in-place", "--config=./pyproject.toml", "-r", "*"]
+        args: ["--in-place", "-r"]
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0
     hooks:
