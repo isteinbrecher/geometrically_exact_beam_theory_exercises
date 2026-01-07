@@ -1,10 +1,12 @@
-# Exercises for **Non-linear Structural Mechanics**
+# Computer lab for **Nichtlineare Strukturmechanik**
 
-BeamMe provides example notebooks to showcase its core features and functionality.
-The examples can be found in the `examples/` directory.
-They can be run locally or directly tested from your browser via the following links:
+The exercises in this repository are part of the course _Nichtlineare Strukturmechanik_ at the Technical University of Munich (TUM), by Prof. Dr.-Ing. Christoph Meier.
 
-<!-- - Example 1: **Finite rotation framework** [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/isteinbrecher/nonlinear_structures_exercise/main?labpath=examples%2Fexample_1_finite_rotations.ipynb)
-- Example 2: **Core mesh generation functions** [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/isteinbrecher/nonlinear_structures_exercise/main?labpath=examples%2Fexample_2_core_mesh_generation_functions.ipynb) -->
+This repository contains Jupyter notebooks that contain the exercises.
+The notebooks can be run interactively in your browser using this link [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/isteinbrecher/nonlinear_structures_exercise/main).
 
-You can also interactively test the entire BeamMe framework directly from your browser here [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/isteinbrecher/nonlinear_structures_exercise/main)
+Some general instructions for using the notebooks in the interactive browser session:
+- The first time you open a notebook via the Binder link, it may take a few minutes to start up.
+- You can run the code cells in the notebooks by selecting a cell and pressing `Shift + Enter`.
+- If you want to save your changes, you need to download the notebook to your local machine (`File > Download`).
+- The interactive environment provided by Binder is temporary and will be reset after a period of inactivity, so make sure to save your work regularly.
