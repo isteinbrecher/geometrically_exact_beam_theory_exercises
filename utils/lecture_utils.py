@@ -112,6 +112,7 @@ def run_four_c(
     total_time=1.0,
     n_steps=1,
     tol=1e-10,
+    display_log=True,
 ):
     """Run a 4C simulation with given parameters."""
 
@@ -173,7 +174,8 @@ def run_four_c(
         command = [four_c_exe, input_file_path.absolute(), simulation_name]
 
         # Start simulation
-        print("Start simulation")
+        if display_log:
+            print("Start simulation")
         process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
@@ -188,41 +190,42 @@ def run_four_c(
         is_error = False
         finished = False
         for line in process.stdout:
-            line = line.rstrip("\n")
+            if display_log:
+                line = line.rstrip("\n")
 
-            # Write line to logfile
-            logfile.write(line + "\n")
+                # Write line to logfile
+                logfile.write(line + "\n")
 
-            # Flush file so log is always up to date
-            logfile.flush()
+                # Flush file so log is always up to date
+                logfile.flush()
 
-            # Process the line however you want
-            if "Nonlinear Solver Step" in line:
-                nonlinear_solver_step_count = int(line.split(" ")[4])
-            elif "||F||" in line:
-                if not nonlinear_solver_step_count == 0:
-                    residuum = float(line.split(" ")[10])
-                    print(
-                        f"  Nonlinear Solver Step {nonlinear_solver_step_count}: Residuum = {residuum:.3e}"
-                    )
-            elif "Finalised step" in line:
-                split = line.split(" ")
-                step = int(split[2])
-                time = float(split[7])
-                print(f"Finished time step {step} for time {time:.3e}")
-            elif "OK (0)" in line:
-                finished = True
-            elif (
-                "========================================================================="
-                in line
-                and not finished
-            ):
+                # Process the line however you want
+                if "Nonlinear Solver Step" in line:
+                    nonlinear_solver_step_count = int(line.split(" ")[4])
+                elif "||F||" in line:
+                    if not nonlinear_solver_step_count == 0:
+                        residuum = float(line.split(" ")[10])
+                        print(
+                            f"  Nonlinear Solver Step {nonlinear_solver_step_count}: Residuum = {residuum:.3e}"
+                        )
+                elif "Finalised step" in line:
+                    split = line.split(" ")
+                    step = int(split[2])
+                    time = float(split[7])
+                    print(f"Finished time step {step} for time {time:.3e}")
+                elif "OK (0)" in line:
+                    finished = True
+                elif (
+                    "========================================================================="
+                    in line
+                    and not finished
+                ):
+                    if is_error:
+                        print(line)
+                    is_error = not is_error
+
                 if is_error:
                     print(line)
-                is_error = not is_error
-
-            if is_error:
-                print(line)
 
         _return_code = process.wait()
 
@@ -409,10 +412,10 @@ def plot_beam_2d(simulation_name):
     display(ui)
 
 
-def get_force_displacement_data(simulation_name):
+def get_force_displacement_data(simulation_name, point_coordinates):
     """Get the force and displacement data from the simulation results.
 
-    The displacement is taken from the node in the middle of the beam.
+    The displacement is taken from the node at the given position.
     """
 
     simulation_path = Path.cwd() / "simulations" / simulation_name
@@ -444,15 +447,25 @@ def get_force_displacement_data(simulation_name):
         reader.set_active_time_point(i_step)
         mesh = reader.read()[0]
         reference_coordinates = mesh.points - mesh.point_data["displacement"]
-        max_coordinates = np.max(reference_coordinates, axis=0)
-        min_coordinates = np.min(reference_coordinates, axis=0)
-        middle = 0.5 * (max_coordinates + min_coordinates)
-        difference = reference_coordinates - middle
+        difference = reference_coordinates - [
+            point_coordinates[0],
+            point_coordinates[1],
+            0.0,
+        ]
         distances = np.linalg.norm(difference, axis=1)
         closest_point_index = np.argmin(distances)
         if distances[closest_point_index] > 1e-6:
-            raise ValueError("Could not find a node close to the beam middle.")
+            raise ValueError(
+                f"Could not find a node close to the given position {point_coordinates}."
+            )
         displacement.append(mesh.point_data["displacement"][closest_point_index][:2])
         force.append(force_value * time)
 
     return np.array(force), np.array(displacement)
+
+
+def get_displacement_data(simulation_name, point_coordinates):
+    """The displacement is taken from the node at the given position."""
+
+    _, displacement = get_force_displacement_data(simulation_name, point_coordinates)
+    return displacement[-1]
