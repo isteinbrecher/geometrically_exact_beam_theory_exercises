@@ -3,15 +3,20 @@
 import subprocess
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
+import pyvista as pv
 import yaml
 from beamme.core.boundary_condition import BoundaryCondition
 from beamme.core.conf import bme
 from beamme.core.function import Function
 from beamme.four_c.header_functions import set_header_static, set_runtime_output
 from beamme.four_c.input_file import InputFile
+from beamme.four_c.model_importer import import_four_c_model
 from beamme.four_c.run_four_c import clean_simulation_directory
 from beamme.mesh_creation_functions.beam_line import create_beam_mesh_line
+from IPython.display import display
+from ipywidgets import Button, HBox, Label, Output, VBox
 
 
 def create_beam_mesh_line_2d(
@@ -146,7 +151,7 @@ def run_four_c(
     }
 
     # Dump the file to disc.
-    simulation_directory = Path.cwd() / simulation_name
+    simulation_directory = Path.cwd() / "simulations" / simulation_name
     input_file_path = simulation_directory / f"{simulation_name}.4C.yaml"
     clean_simulation_directory(simulation_directory)
     input_file.dump(input_file_path)
@@ -220,3 +225,234 @@ def run_four_c(
                 print(line)
 
         _return_code = process.wait()
+
+
+def plot_beam_2d(simulation_name):
+    """Plot the beam deformation in 2D (XY-plane) over time steps."""
+
+    # Load the result file
+    simulation_path = Path.cwd() / "simulations" / simulation_name
+    output_file = simulation_path / f"{simulation_name}-structure-beams.pvd"
+    reader = pv.get_reader(output_file)
+
+    # Load the element arc lengths
+    with open(simulation_path / f"{simulation_name}_arc_length.yaml") as stream:
+        arc_length_data = yaml.safe_load(stream)
+
+    # Load the data for all time steps
+    steps = reader.time_values
+    grid_points = []
+    cross_section_resultants_map = {
+        "material_axial_force_GPs": "normal",
+        "material_bending_moment_3_GPs": "bending",
+        "material_shear_force_2_GPs": "shear",
+    }
+    cross_section_resultants_labels = {
+        "normal": "Axial force",
+        "bending": "Bending moment",
+        "shear": "Shear force",
+    }
+    cell_data = {
+        "normal": [],
+        "bending": [],
+        "shear": [],
+    }
+    for i_step, time in enumerate(steps):
+        reader.set_active_time_point(i_step)
+        mesh = reader.read()[0]
+        grid_points.append(mesh.points.copy())
+        for name in mesh.cell_data.keys():
+            if name in cross_section_resultants_map:
+                data_name = cross_section_resultants_map[name]
+                cell_data[data_name].append(np.array(mesh.cell_data[name]))
+
+    # Convert lists to numpy arrays for easier indexing
+    grid_points = np.array(grid_points)
+    for key in cell_data:
+        data_from_pv = cell_data[key]
+        data_time_steps = []
+        for time_step in range(len(data_from_pv)):
+            data_for_plot = []
+            for i_element, value in enumerate(data_from_pv[time_step]):
+                for i in range(2):
+                    data_for_plot.append([arc_length_data[i_element][i], value])
+                data_for_plot.append([np.nan, np.nan])
+            data_time_steps.append(data_for_plot)
+        cell_data[key] = np.array(data_time_steps)
+
+    # Get the bounds for the displacement plot
+    upper_bound = np.max(grid_points, axis=(0, 1))
+    lower_bound = np.min(grid_points, axis=(0, 1))
+    dimension = np.linalg.norm(upper_bound - lower_bound)
+
+    # Check that the simulation is in plane
+    if not np.isclose(upper_bound[2] - lower_bound[2], 0.0):
+        raise ValueError(
+            "The beam is not in the XY-plane. This plotting function only supports beams in the XY-plane."
+        )
+
+    #
+
+    # -------------------------------------------------------
+    # Output widget for the plot
+    # -------------------------------------------------------
+    out = Output()
+    state = {"step": 0}
+
+    def plot_step():
+        """Plot the current step."""
+        step = state["step"]
+        with out:
+            out.clear_output(wait=True)
+            fig = plt.figure(figsize=(10, 6))
+            gs = fig.add_gridspec(3, 2, width_ratios=[3, 1])
+
+            # First plot the beam deformation in XZ-plane
+            ax0 = fig.add_subplot(gs[:, 0])
+            ax0.plot(
+                grid_points[state["step"], :, 0],
+                grid_points[state["step"], :, 1],
+                linewidth=3,
+            )
+            ax0.set_title(f"Beam configuration in space at time {steps[step]:.3f}")
+            ax0.set_xlim(
+                lower_bound[0] - dimension * 0.1, upper_bound[0] + dimension * 0.1
+            )
+            ax0.set_ylim(
+                lower_bound[1] - dimension * 0.1, upper_bound[1] + dimension * 0.1
+            )
+            ax0.grid(True)
+            ax0.set_xlabel("X")
+            ax0.set_ylabel("Y")
+            ax0.set_aspect("equal", "box")
+
+            # Plot the cross-section resultants
+            ax = [
+                fig.add_subplot(gs[0, 1]),
+                fig.add_subplot(gs[1, 1]),
+                fig.add_subplot(gs[2, 1]),
+            ]
+            for i, (name, data) in enumerate(cell_data.items()):
+                data = data[state["step"]]
+                ax[i].plot(data[:, 0], data[:, 1])
+                data_no_nan = data[~np.isnan(data[:, 1]), 1]
+                y_bounds = [
+                    np.min([0.0, np.min(data_no_nan)]),
+                    np.max([0.0, np.max(data_no_nan)]),
+                ]
+                size = np.max([0.1, y_bounds[1] - y_bounds[0]])
+                ax[i].set_ylim(y_bounds[0] - size * 0.1, y_bounds[1] + size * 0.1)
+                ax[i].set_title(f"{cross_section_resultants_labels[name]} along beam")
+                ax[i].grid(True)
+
+            plt.tight_layout()
+            plt.show()
+
+    # -------------------------------------------------------
+    # Step label
+    # -------------------------------------------------------
+    step_label = Label(f"Step: {state['step']}")
+
+    def update_step_label():
+        """Update the label showing the current step."""
+        step_label.value = f"Step: {state['step']}"
+
+    # -------------------------------------------------------
+    # Buttons + logic
+    # -------------------------------------------------------
+    btn_first = Button(description="⏮ First")
+    btn_prev = Button(description="◀ Prev")
+    btn_next = Button(description="Next ▶")
+    btn_last = Button(description="Last ⏭")
+
+    def go_first(b):
+        """Go to the first step."""
+        state["step"] = 0
+        update_step_label()
+        plot_step()
+
+    def go_prev(b):
+        """Go to the previous step."""
+        if state["step"] > 0:
+            state["step"] -= 1
+        update_step_label()
+        plot_step()
+
+    def go_next(b):
+        """Go to the next step."""
+        if state["step"] < len(steps) - 1:
+            state["step"] += 1
+        update_step_label()
+        plot_step()
+
+    def go_last(b):
+        """Go to the last step."""
+        state["step"] = len(steps) - 1
+        update_step_label()
+        plot_step()
+
+    btn_first.on_click(go_first)
+    btn_prev.on_click(go_prev)
+    btn_next.on_click(go_next)
+    btn_last.on_click(go_last)
+
+    # -------------------------------------------------------
+    # Layout (buttons row, label row, then plot)
+    # -------------------------------------------------------
+    controls = HBox([btn_first, btn_prev, btn_next, btn_last])
+    # labels = HBox([step_label])
+
+    ui = VBox([controls, out])
+
+    # Show initial plot
+    plot_step()
+    display(ui)
+
+
+def get_force_displacement_data(simulation_name):
+    """Get the force and displacement data from the simulation results.
+
+    The displacement is taken from the node in the middle of the beam.
+    """
+
+    simulation_path = Path.cwd() / "simulations" / simulation_name
+
+    # Load the input file and extract the applied force.
+    input_file_path = simulation_path / f"{simulation_name}.4C.yaml"
+    input_file, _ = import_four_c_model(input_file_path)
+    point_neumann_loads = input_file.fourc_input["DESIGN POINT NEUMANN CONDITIONS"]
+    counter = 0
+    for load in point_neumann_loads:
+        if not np.all(np.array(load["FUNCT"]) == 0):
+            force_value = np.linalg.norm(load["VAL"])
+            # point_set = load["E"]
+            counter += 1
+    if counter != 1:
+        raise ValueError(
+            "Expected exactly one non-zero Neumann load in the input file."
+        )
+
+    # Load the result file
+    output_file = simulation_path / f"{simulation_name}-structure-beams.pvd"
+    reader = pv.get_reader(output_file)
+
+    # Load the data for all time steps
+    steps = reader.time_values
+    displacement = []
+    force = []
+    for i_step, time in enumerate(steps):
+        reader.set_active_time_point(i_step)
+        mesh = reader.read()[0]
+        reference_coordinates = mesh.points - mesh.point_data["displacement"]
+        max_coordinates = np.max(reference_coordinates, axis=0)
+        min_coordinates = np.min(reference_coordinates, axis=0)
+        middle = 0.5 * (max_coordinates + min_coordinates)
+        difference = reference_coordinates - middle
+        distances = np.linalg.norm(difference, axis=1)
+        closest_point_index = np.argmin(distances)
+        if distances[closest_point_index] > 1e-6:
+            raise ValueError("Could not find a node close to the beam middle.")
+        displacement.append(mesh.point_data["displacement"][closest_point_index][:2])
+        force.append(force_value * time)
+
+    return np.array(force), np.array(displacement)
