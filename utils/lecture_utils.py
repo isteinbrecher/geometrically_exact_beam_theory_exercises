@@ -15,6 +15,7 @@ from beamme.four_c.input_file import InputFile
 from beamme.four_c.model_importer import import_four_c_model
 from beamme.four_c.run_four_c import clean_simulation_directory
 from beamme.mesh_creation_functions.beam_line import create_beam_mesh_line
+from beamme.utils.environment import is_mybinder
 from IPython.display import display
 from ipywidgets import Button, HBox, Label, Output, VBox
 
@@ -123,7 +124,7 @@ def run_four_c(
         input_file,
         total_time=total_time,
         n_steps=n_steps,
-        max_iter=20,
+        max_iter=50,
         tol_residuum=1.0,
         tol_increment=tol,
         create_nox_file=False,
@@ -170,7 +171,10 @@ def run_four_c(
     # Run the simulation and process the results line by line.
     with open(simulation_directory / f"{simulation_name}.log", "w") as logfile:
         # Command to run 4C
-        four_c_exe = "/data/a11bivst/dev/4C/release/4C"
+        if is_mybinder():
+            four_c_exe = "/home/user/4C/build/4C"
+        else:
+            four_c_exe = "/data/a11bivst/dev/4C/release/4C"
         command = [four_c_exe, input_file_path.absolute(), simulation_name]
 
         # Start simulation
