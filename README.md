@@ -3,7 +3,7 @@
 The exercises in this repository are part of the course _Nichtlineare Strukturmechanik_ at the Technical University of Munich (TUM), by Prof. Dr.-Ing. Christoph Meier.
 
 This repository contains Jupyter notebooks that contain the exercises.
-The notebooks can be run interactively in your browser using this link [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/isteinbrecher/nonlinear_structures_exercise/main).
+The notebooks can be run interactively in your browser using this link: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/isteinbrecher/nonlinear_structures_exercise/main)
 
 Some general instructions for using the notebooks in the interactive browser session:
 - The first time you open a notebook via the Binder link, it may take a few minutes to start up.
