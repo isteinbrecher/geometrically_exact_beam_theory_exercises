@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 ARG BASE_IMAGE_TAG=latest
-FROM ghcr.io/4c-multiphysics/4c:main
+FROM ghcr.io/4c-multiphysics/4c-minimal:main
 
 USER root
 RUN apt-get upgrade
