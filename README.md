@@ -1,6 +1,6 @@
 # Computer Lab for **Geometrisch exakte Balkentheorien**
 
-This repository contains the exercise material for the course *Geometrisch exakte Balkentheorien* at the Technical University of Munich (TUM), taught by **Prof. Dr.-Ing. Christoph Meier**.
+This repository contains the exercise material for the course *Geometrisch exakte Balkentheorien* at the Technical University of Munich (TUM), taught by **Prof. Dr.-Ing. Christoph Meier**, **Torsten Schmid M.Sc.** and **Dr.-Ing. Ivo Steinbrecher**.
 
 The exercises are provided as **Jupyter notebooks**, which are intended to be run interactively.
 
