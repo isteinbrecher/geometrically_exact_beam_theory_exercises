@@ -281,9 +281,10 @@ def plot_beam_2d(simulation_name):
         for time_step in range(len(data_from_pv)):
             data_for_plot = []
             for i_element, value in enumerate(data_from_pv[time_step]):
-                for i in range(2):
-                    data_for_plot.append([arc_length_data[i_element][i], value])
-                data_for_plot.append([np.nan, np.nan])
+                element_center = 0.5 * (
+                    arc_length_data[i_element][1] + arc_length_data[i_element][0]
+                )
+                data_for_plot.append([element_center, value])
             data_time_steps.append(data_for_plot)
         cell_data[key] = np.array(data_time_steps)
 
