@@ -46,4 +46,4 @@ RUN ls -l
 ENV PATH="/home/ubuntu/beamme-env/bin:$PATH"
 RUN pip install -e beamme[dev,fourc]@git+https://github.com/beamme-py/beamme.git@main
 RUN pip install --no-cache-dir notebook jupyterlab jupyterhub tame
-RUN pip install pyvista[jupyter] trame ipywidgets
+RUN pip install pyvista[jupyter] trame ipywidgets pandoc
